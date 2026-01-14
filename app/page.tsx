@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
 
 type Countdown = {
   days: string;
@@ -67,6 +68,7 @@ export default function HomePage() {
   const [revealed, setRevealed] = useState(false);
   const [typing, setTyping] = useState(false);
   const [typedLines, setTypedLines] = useState<string[]>([]);
+  const [typingComplete, setTypingComplete] = useState(false);
   const timeoutsRef = useRef<number[]>([]);
 
   const letterLines = useMemo(
@@ -102,6 +104,7 @@ export default function HomePage() {
   const startTyping = () => {
     if (typing) return;
     setTyping(true);
+    setTypingComplete(false);
     setTypedLines(Array(letterLines.length).fill(''));
     timeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
     timeoutsRef.current = [];
@@ -109,6 +112,7 @@ export default function HomePage() {
     const typeLine = (lineIndex: number) => {
       if (lineIndex >= letterLines.length) {
         setTyping(false);
+        setTypingComplete(true);
         return;
       }
       const chars = [...letterLines[lineIndex]];
@@ -135,9 +139,18 @@ export default function HomePage() {
   };
 
   const handleReveal = () => {
-    if (!countdown.done) return;
+    if (!countdown.done || typing || revealed) return;
     setRevealed(true);
     startTyping();
+  };
+
+  const handleClose = () => {
+    setRevealed(false);
+    setTyping(false);
+    setTypingComplete(false);
+    setTypedLines([]);
+    timeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
+    timeoutsRef.current = [];
   };
 
   const lockedText = countdown.done
@@ -194,8 +207,53 @@ export default function HomePage() {
   ];
 
   const chicagoExcerpt = [
-    '“I met her on my way to Chicago...”',
-    '“...she waited for me, quietly, like a secret skyline.”',
+    '"I met her on my way to Chicago..."',
+    '"...she waited for me, quietly, like a secret skyline."',
+  ];
+
+  const characters = [
+    {
+      name: 'Columbina',
+      description: 'A nova personagem que você está esperando ansiosamente!',
+      emoji: '🕊️',
+      color: '#ffb6c1',
+      image: '/characters/Columbina.gif',
+    },
+    {
+      name: 'Raiden Shogun',
+      description: 'A poderosa Shogun de Inazuma',
+      emoji: '⚡',
+      color: '#dda0dd',
+      image: '/characters/RaidenShogun.gif',
+    },
+    {
+      name: 'Yae Miko',
+      description: 'A astuta Guuji do Grande Santuário',
+      emoji: '🦊',
+      color: '#ffb6c1',
+      image: '/characters/YaeMiko.gif',
+    },
+    {
+      name: 'Ganyu',
+      description: 'A doce secretária de Liyue',
+      emoji: '❄️',
+      color: '#b0e0e6',
+      image: '/characters/Ganyu.gif',
+    },
+    {
+      name: 'Hu Tao',
+      description: 'A brincalhona diretora do Serviço Funerário',
+      emoji: '🔥',
+      color: '#ff69b4',
+      image: '/characters/HuTao.gif',
+    },
+    {
+      name: 'Ayaka',
+      description: 'A elegante Princesa de Inazuma',
+      emoji: '❄️',
+      color: '#e0e6ff',
+      image: '/characters/Ayaka.gif',
+    },
   ];
 
   const isLocked = !countdown.done;
@@ -313,10 +371,16 @@ export default function HomePage() {
             <button
               className="reveal"
               id="revealBtn"
-              onClick={handleReveal}
-              disabled={!countdown.done || typing}
+              onClick={revealed && typingComplete ? handleClose : handleReveal}
+              disabled={!countdown.done || typing || (revealed && !typingComplete)}
             >
-              {countdown.done ? 'Abrir presente agora' : 'Bloqueado até 15/01/2026'}
+              {!countdown.done
+                ? 'Bloqueado até 15/01/2026'
+                : revealed && typingComplete
+                  ? 'Fechar presente'
+                  : revealed && typing
+                    ? 'Abrindo...'
+                    : 'Abrir presente agora'}
             </button>
           </div>
         </div>
@@ -399,7 +463,7 @@ export default function HomePage() {
                   {line}
                 </p>
               ))}
-              <p style={{ color: '#cbd5f5', fontSize: 13 }}>
+              <p style={{ color: 'var(--muted)', fontSize: 13 }}>
                 Trecho curto por direitos autorais. Veja a letra completa no link seguro abaixo.
               </p>
               <a
@@ -410,6 +474,61 @@ export default function HomePage() {
               >
                 Ver letra completa
               </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Seção de Personagens do Genshin */}
+        <div className="hero" style={{ marginTop: 20 }}>
+          <div className="character-section">
+            <h2 className="section-title">💖 Personagens que lembram você</h2>
+            <p className="section-subtitle">
+              Cada uma delas tem um pouco da sua personalidade única e especial
+            </p>
+            <div className="characters-grid">
+              {characters.map((char, idx) => (
+                <div key={idx} className="character-card">
+                  {char.image ? (
+                    <div className="character-image-wrapper">
+                      <Image
+                        src={char.image}
+                        alt={char.name}
+                        width={120}
+                        height={120}
+                        className="character-image"
+                        unoptimized
+                        onError={(e) => {
+                          // Se a imagem falhar, mostra o emoji
+                          const wrapper = e.currentTarget.parentElement;
+                          if (wrapper) wrapper.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="character-emoji">{char.emoji}</div>
+                  )}
+                  <h3 className="character-name">{char.name}</h3>
+                  <p className="character-desc">{char.description}</p>
+                </div>
+              ))}
+            </div>
+            <div className="character-highlight">
+              <div className="tagline">🕊️ Destaque especial: Columbina</div>
+              <div className="highlight-image-wrapper">
+                <Image
+                  src="/characters/Columbina-Destaque.gif"
+                  alt="Columbina - Destaque Especial"
+                  width={200}
+                  height={200}
+                  className="highlight-image"
+                  unoptimized
+                />
+              </div>
+              <p>
+                A personagem que você mais está esperando! Assim como ela, você traz uma aura única e
+                especial que ilumina tudo ao redor. Mal posso esperar para ver você explorando Teyvat
+                com ela quando lançar! ✨
+              </p>
             </div>
           </div>
         </div>
